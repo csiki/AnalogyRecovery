@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AnalogyRecovery", "AnalogyRecovery\AnalogyRecovery.vcxproj", "{1F1E6990-6304-4083-BE95-48D7CA7DA082}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1F1E6990-6304-4083-BE95-48D7CA7DA082}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1F1E6990-6304-4083-BE95-48D7CA7DA082}.Debug|Win32.Build.0 = Debug|Win32
+		{1F1E6990-6304-4083-BE95-48D7CA7DA082}.Release|Win32.ActiveCfg = Release|Win32
+		{1F1E6990-6304-4083-BE95-48D7CA7DA082}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

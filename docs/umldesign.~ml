@@ -45,7 +45,7 @@
 <XPD:REF name="DiagramOwner">nW5b9jI2AUqubSMbK8r9LAAA</XPD:REF>
 <XPD:OBJ name="DiagramView" type="UMLClassDiagramView" guid="sMrnqPTVKE26aEO1VagBmwAA">
 <XPD:REF name="Diagram">UsGpppgn5U2eEi7c5W/Z+QAA</XPD:REF>
-<XPD:ATTR name="#OwnedViews" type="integer">18</XPD:ATTR>
+<XPD:ATTR name="#OwnedViews" type="integer">22</XPD:ATTR>
 <XPD:OBJ name="OwnedViews[0]" type="UMLClassView" guid="5mggeSz2v0GD3L1TXEEdjgAA">
 <XPD:ATTR name="LineColor" type="string">clMaroon</XPD:ATTR>
 <XPD:ATTR name="FillColor" type="string">$00B9FFFF</XPD:ATTR>
@@ -592,6 +592,40 @@ and thus Word::ctx_freq as well
 <XPD:ATTR name="Points" type="Points">330,382;372,412</XPD:ATTR>
 <XPD:REF name="Head">iA0GwfzrLEuwdiOlRymtcgAA</XPD:REF>
 <XPD:REF name="Tail">lYKdad2U2EuoNwJuKD5geQAA</XPD:REF>
+</XPD:OBJ>
+<XPD:OBJ name="OwnedViews[18]" type="UMLNoteView" guid="9osfC9qDXUCtI2Z6KZzOiAAA">
+<XPD:ATTR name="LineColor" type="string">clMaroon</XPD:ATTR>
+<XPD:ATTR name="FillColor" type="string">$00B9FFFF</XPD:ATTR>
+<XPD:ATTR name="Left" type="integer">80</XPD:ATTR>
+<XPD:ATTR name="Top" type="integer">28</XPD:ATTR>
+<XPD:ATTR name="Width" type="integer">87</XPD:ATTR>
+<XPD:ATTR name="Height" type="integer">30</XPD:ATTR>
+<XPD:ATTR name="Text" type="string">order by hash
+</XPD:ATTR>
+</XPD:OBJ>
+<XPD:OBJ name="OwnedViews[19]" type="UMLNoteLinkView" guid="2jTeSO2K10+ZWisCnnCp3gAA">
+<XPD:ATTR name="LineColor" type="string">clMaroon</XPD:ATTR>
+<XPD:ATTR name="FillColor" type="string">$00B9FFFF</XPD:ATTR>
+<XPD:ATTR name="Points" type="Points">192,88;146,57</XPD:ATTR>
+<XPD:REF name="Head">9osfC9qDXUCtI2Z6KZzOiAAA</XPD:REF>
+<XPD:REF name="Tail">5mggeSz2v0GD3L1TXEEdjgAA</XPD:REF>
+</XPD:OBJ>
+<XPD:OBJ name="OwnedViews[20]" type="UMLNoteView" guid="a/Zd/jMuKUuQZ/GoesuQRQAA">
+<XPD:ATTR name="LineColor" type="string">clMaroon</XPD:ATTR>
+<XPD:ATTR name="FillColor" type="string">$00B9FFFF</XPD:ATTR>
+<XPD:ATTR name="Left" type="integer">760</XPD:ATTR>
+<XPD:ATTR name="Top" type="integer">92</XPD:ATTR>
+<XPD:ATTR name="Width" type="integer">91</XPD:ATTR>
+<XPD:ATTR name="Height" type="integer">30</XPD:ATTR>
+<XPD:ATTR name="Text" type="string">order by string
+</XPD:ATTR>
+</XPD:OBJ>
+<XPD:OBJ name="OwnedViews[21]" type="UMLNoteLinkView" guid="+KeqPbsQVESSiHjBzKKNlAAA">
+<XPD:ATTR name="LineColor" type="string">clMaroon</XPD:ATTR>
+<XPD:ATTR name="FillColor" type="string">$00B9FFFF</XPD:ATTR>
+<XPD:ATTR name="Points" type="Points">723,119;760,113</XPD:ATTR>
+<XPD:REF name="Head">a/Zd/jMuKUuQZ/GoesuQRQAA</XPD:REF>
+<XPD:REF name="Tail">alExkwsh9USXLtKi8Vq+cwAA</XPD:REF>
 </XPD:OBJ>
 </XPD:OBJ>
 </XPD:OBJ>
