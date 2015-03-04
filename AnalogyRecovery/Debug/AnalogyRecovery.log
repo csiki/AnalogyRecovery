@@ -1,14 +1,8 @@
-﻿Build started 2015.03.04. 1:59:55.
+﻿Build started 2015.03.04. 22:13:05.
      1>Project "c:\CSIKI\PROJECTS\AnalogyRecovery\AnalogyRecovery\AnalogyRecovery.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt ..\src\Context.cpp ..\src\Corpus.cpp ..\src\SparseVector.cpp ..\src\Word.cpp ..\src\main.cpp
-         Context.cpp
-         Generating Code...
-         Skipping... (no relevant changes detected)
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt ..\src\main.cpp
          main.cpp
-         Word.cpp
-         SparseVector.cpp
-         Corpus.cpp
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\CSIKI\PROJECTS\AnalogyRecovery\Debug\AnalogyRecovery.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\CSIKI\PROJECTS\AnalogyRecovery\Debug\AnalogyRecovery.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\CSIKI\PROJECTS\AnalogyRecovery\Debug\AnalogyRecovery.lib" /MACHINE:X86 Debug\Context.obj
          Debug\Corpus.obj
@@ -20,4 +14,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:03.39
+Time Elapsed 00:00:03.29

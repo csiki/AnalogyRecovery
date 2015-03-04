@@ -8,49 +8,63 @@
 #include <exception>
 #include <numeric>
 #include <set>
+#include <iostream>
 
 using std::map;
 using std::pair;
 using std::vector;
 using std::set;
 
+template <typename K, typename V>
+set<K> get_map_keys(typename map<K, V>::const_iterator& first, typename map<K, V>::const_iterator& last)
+{
+	set<K> res;
+	std::transform(first, last, std::inserter(res, res.begin()),
+		[] (const pair<K, V>& p) { return p.first; });
+	return res;
+}
+
 template <typename T>
 class SparseVector
 {
 public:
-	SparseVector(size_t len_ = 0, T defval_ = T()) : len(len_), defval(defval_) {}
+	SparseVector(size_t len_ = 0) : len(len_) {}
 
 	// ordinary operators
     SparseVector operator+(const SparseVector& sv) const
 	{
-		check_dimension_match(sv);
+		check_compatibility(sv);
 
-		SparseVector res = *this;
+		auto res = *this;
 		for (auto& v : sv.values)
 			res[v.first] += v.second;
+
+		res.clear_def_values();
 		
 		return res;
 	}
 
     SparseVector operator-(const SparseVector& sv) const
 	{
-		check_dimension_match(sv);
+		check_compatibility(sv);
 
 		SparseVector res = *this;
 		for (auto& v : sv.values)
-			res[v.first] -= v.second;
+			res.values[v.first] -= v.second;
+
+		res.clear_def_values();
 
 		return res;
 	}
 
     T operator*(const SparseVector& sv) const
 	{
-		check_dimension_match(sv);
+		check_compatibility(sv);
 
 		T res = defval;
 		auto intersect = intersect_keys(sv);
 		for (auto i : intersect)
-			res += values[i] * sv.values[i];
+			res += values.at(i) * sv.values.at(i);
 
 		return res;
 	}
@@ -58,8 +72,10 @@ public:
     SparseVector operator*(const T& c) const
 	{
 		SparseVector res = *this;
-		for (auto& v : values)
+		for (auto& v : res.values)
 			v.second *= c;
+
+		res.clear_def_values();
 
 		return res;
 	}
@@ -67,50 +83,72 @@ public:
     SparseVector operator/(const T& c) const
 	{
 		SparseVector res = *this;
-		for (auto& v : values)
+		for (auto& v : res.values)
 			v.second /= c;
+
+		res.clear_def_values();
 
 		return res;
 	}
 
-	// move operators TODO
+	// move operators
 	SparseVector operator+(SparseVector&& sv) const
 	{
-		check_dimension_match(sv);
+		check_compatibility(sv);
 
 		for (auto& v : values)
 			sv[v.first] += v.second;
+
+		sv.clear_def_values();
 		
 		return sv;
 	}
 
     SparseVector operator-(SparseVector&& sv) const
 	{
-		check_dimension_match(sv);
+		check_compatibility(sv);
 
 		auto un = union_keys(sv);
 		for (auto& u : un)
 			sv[u] = (*this)[u] - sv[u];
+
+		sv.clear_def_values();
 		
 		return sv;
 	}
 
     T operator*(SparseVector&& sv) const
 	{
-		// TODO
-		return SparseVector();
+		check_compatibility(sv);
+
+		T res = defval;
+		auto intersect = intersect_keys(sv);
+		for (auto i : intersect)
+			res += values.at(i) * sv.values.at(i);
+
+		return res;
 	}
 
     SparseVector operator*(T&& c) const
 	{
-		// TODO
-		return SparseVector();
+		SparseVector res = *this;
+		for (auto& v : res.values)
+			v.second *= c;
+
+		res.clear_def_values();
+
+		return res;
 	}
 
     SparseVector operator/(T&& c) const
 	{
-		// TODO
-		return SparseVector();
+		SparseVector res = *this;
+		for (auto& v : res.values)
+			v.second /= c;
+
+		res.clear_def_values();
+
+		return res;
 	}
 
 	T abs() const
@@ -128,6 +166,16 @@ public:
 	void set_len(size_t len_)
 	{
 		len = len_;
+		for (auto it = values.begin(); it != values.end(); )
+		{
+			if (it->first >= len)
+			{
+				values.erase(it, values.end());
+				return;
+			}
+			else
+				++it;
+		}
 	}
 
 	T& operator[](size_t index)
@@ -141,7 +189,7 @@ public:
 		return values[index];
 	}
 
-	const T& operator[](size_t index) const // does not increase container size // TODO is this called when intended or the other operator[] ???
+	const T& operator[](size_t index) const // does not increase container size
 	{
 		if (len <= index)
 			throw std::exception("Index out of bounds!");
@@ -149,51 +197,134 @@ public:
 		if (values.find(index) == values.end())
 			return defval;
 
-		return values[index];
+		return values.at(index);
 	}
 
-	/*static bool values_less_than(const pair<size_t, T>& v1, const pair<size_t, T>& v2)
+	void clear()
+	{
+		values.clear();
+	}
+
+	friend std::ostream& operator<<(std::ostream& out, const SparseVector& sv)
+	{
+		if (sv.values.empty())
+			out << "[ ]";
+		else
+		{
+			out << "[ ..." << std::endl;
+			for (auto& v : sv.values)
+				out << "  " << v.first << ": " << v.second << std::endl;
+			out << "  ... ]";
+		}
+		return out;
+	}
+
+	static bool keys_less_than(const pair<size_t, T>& v1, const pair<size_t, T>& v2)
 	{
 		return v1.first < v2.first;
-	}*/
+	}
 
 private:
-	T defval; // always additive identity ~ like 0
+	static T defval; // always additive identity ~ like 0
 	size_t len;
     map<size_t, T> values;
 
-	void check_dimension_match(const SparseVector& sv)
+	void check_compatibility(const SparseVector& sv) const
 	{
 		if (len != sv.len)
 			throw std::exception("SparseVector dimension mismatch!");
 	}
 
-	inline set<size_t> intersect_keys(const map<size_t, T>& vs)
+	void clear_def_values()
+	{
+		for (auto it = values.begin(); it != values.end(); )
+		{
+			if (it->second == std::numeric_limits<T>::epsilon()
+				|| std::abs(it->second) < std::numeric_limits<T>::epsilon())
+				it = values.erase(it);
+			else
+				++it;
+		}
+	}
+
+	set<size_t> intersect_keys(const SparseVector& vs) const
 	{
 		set<size_t> intersect;
-		std::set_intersection(values.begin(), values.end(),
-			vs.values.begin(), vs.values.end(),
-			std::inserter(intersect), key_comp);
-
+		auto first1 = values.cbegin();
+		auto last1  = values.cend();
+		auto first2 = vs.values.cbegin();
+		auto last2  = vs.values.cend();
+		auto d_first = std::inserter(intersect, intersect.begin());
+		while (first1 != last1 && first2 != last2)
+		{
+			if (first1->first < first2->first)
+				++first1;
+			else
+			{
+				if (!(first2->first < first1->first))
+					*d_first++ = (*first1++).first;
+				++first2;
+			}
+		}
 		return intersect;
 	}
 
-	inline set<size_t> difference_keys(const map<size_t, T>& vs)
+	set<size_t> difference_keys(const SparseVector& vs) const
 	{
 		set<size_t> diff;
-		std::set_difference(values.begin(), values.end(),
-			vs.values.begin(), vs.values.end(),
-			std::inserter(diff), key_comp);
+		auto first1 = values.cbegin();
+		auto last1  = values.cend();
+		auto first2 = vs.values.cbegin();
+		auto last2  = vs.values.cend();
+		auto d_first = std::inserter(diff, diff.begin());
+		while (first1 != last1)
+		{
+			if (first2 == last2)
+			{
+				auto keys_left = get_map_keys<size_t, T>(first1, last1);
+				std::copy(keys_left.begin(), keys_left.end(), d_first);
+				return diff;
+			}
+			if (first1->first < first2->first)
+				*d_first++ = (*first1++).first;
+			else
+			{
+				if (!(first2->first < first1->first))
+					++first1;
+				++first2;
+			}
+		}
 
 		return diff;
 	}
 
-	inline set<size_t> union_keys(const map<size_t, T>& vs)
+	set<size_t> union_keys(const SparseVector& vs) const
 	{
 		set<size_t> un;
-		std::set_union(values.begin(), values.end(),
-			vs.values.begin(), vs.values.end(),
-			std::inserter(un), key_comp);
+		auto first1 = values.cbegin();
+		auto last1  = values.cend();
+		auto first2 = vs.values.cbegin();
+		auto last2  = vs.values.cend();
+		auto d_first = std::inserter(un, un.begin());
+		for (; first1 != last1; ++d_first) {
+			if (first2 == last2)
+			{
+				auto keys_left = get_map_keys<size_t, T>(first1, last1);
+				std::copy(keys_left.begin(), keys_left.end(), d_first);
+				return un;
+			}
+			if (first2->first < first1->first)
+				*d_first = (*first2++).first;
+			else
+			{
+				*d_first = first1->first;
+				if (!(first1->first < first2->first))
+					++first2;
+				++first1;
+			}
+		}
+		auto keys_left = get_map_keys<size_t, T>(first2, last2);
+		std::copy(keys_left.begin(), keys_left.end(), d_first);
 
 		return un;
 	}
