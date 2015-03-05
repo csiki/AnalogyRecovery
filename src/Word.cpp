@@ -4,7 +4,7 @@
 
 Word::Word(string word_) : word(word_)
 {
-	// TODO first SparseVector impl
+	freq = 1;
 }
 
 Word Word::null_word()

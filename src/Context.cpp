@@ -18,7 +18,7 @@ void Context::inc_freq()
 void Context::expandContext(shared_ptr<Word> word)
 {
 	wow.push_back(word);
-	hash_val = hash(*this); // update hash
+	hash_val = hash(true); // update hash
 }
 
 bool Context::operator<(const Context& ctx) const
@@ -26,17 +26,20 @@ bool Context::operator<(const Context& ctx) const
 	return hash_val < ctx.hash_val;
 }
 
-size_t Context::hash(const Context& ctx)
+size_t Context::hash(bool update)
 {
-	// concat words
-	string str;
-	for (auto w : ctx.wow)
-		str += w->word;
+	if (update || hash_val == 0)
+	{
+		// concat words
+		string str;
+		for (auto w : wow)
+			str += w->word;
+		// calc hash
+		hash_val = 0;
+		auto str_c = str.c_str();
+		while (*str_c)
+		   hash_val = hash_val << 1 ^ *str_c++;
+	}
 
-	size_t h = 0;
-	auto str_c = str.c_str();
-	while (*str_c)
-       h = h << 1 ^ *str_c++;
-
-    return h;
+    return hash_val;
 }
