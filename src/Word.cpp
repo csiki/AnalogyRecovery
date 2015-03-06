@@ -2,6 +2,18 @@
 #include "Word.h"
 #include "Context.h"
 
+size_t std::hash<WordPtr>::operator()(const WordPtr& wp) const
+{
+	std::hash<string> h;
+	return h(wp->word);
+}
+
+bool std::equal_to<WordPtr>::operator()(const WordPtr& wp1, const WordPtr& wp2) const
+{
+	std::equal_to<string> e;
+	return e(wp1->word, wp2->word);
+}
+
 Word::Word(string word_) : word(word_)
 {
 	freq = 1;
@@ -27,9 +39,11 @@ void Word::inc_freq()
 	++freq;
 }
 
-void Word::appears_in(shared_ptr<Context> ctx, size_t distance)
+void Word::appears_in(shared_ptr<Context> ctx)
 {
-	ctx_freq.insert(std::make_pair(ctx, std::pow(Context::alpha, distance)));
+	auto insf = ctx_freq.insert(std::make_pair(ctx, 1));
+	if (!insf.second)
+		(*insf.first).second += 1; // not inserted, thus already inside
 }
 
 void Word::calc_features(size_t corpus_size)
