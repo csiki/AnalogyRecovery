@@ -36,6 +36,7 @@ public:
     
 	Corpus();
     void generate_voc_and_ctx();
+	void calc_feature_vectors();
 	static bool is_forbidden(const string& str);
 	static bool try_form_well(const string& orig, string& res);
 	static void init_forbidden();

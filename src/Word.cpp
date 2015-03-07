@@ -39,17 +39,17 @@ void Word::inc_freq()
 	++freq;
 }
 
-void Word::appears_in(shared_ptr<Context> ctx)
+/*void Word::appears_in(shared_ptr<Context> ctx)
 {
 	auto insf = ctx_freq.insert(std::make_pair(ctx, 1));
 	if (!insf.second)
 		(*insf.first).second += 1; // not inserted, thus already inside
-}
+}*/
 
-void Word::calc_features(size_t corpus_size)
+/*void Word::calc_features(size_t corpus_size)
 {
 	// TODO
-}
+}*/
 
 bool Word::operator<(const Word& w) const
 {

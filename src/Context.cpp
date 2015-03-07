@@ -25,6 +25,13 @@ Context::Context(const deque<shared_ptr<Word>>& words_)
 	hash(true);
 }
 
+void Context::surround_word(shared_ptr<Word> word)
+{
+	auto insw = surrounded.insert(std::make_pair(word, 1));
+	if (!insw.second)
+		(*insw.first).second += 1; // not inserted, thus already inside
+}
+
 size_t Context::get_freq() const
 {
     return freq;
@@ -72,4 +79,14 @@ ConstDeqIt Context::words_begin() const
 ConstDeqIt Context::words_end() const
 {
 	return words.end();
+}
+
+ConstUMapIt Context::surr_begin() const
+{
+	return surrounded.begin();
+}
+
+ConstUMapIt Context::surr_end() const
+{
+	return surrounded.end();
 }

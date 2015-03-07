@@ -7,7 +7,7 @@ set<string> Corpus::forbidden_words;
 Corpus::Corpus()
 {
 	std::cout << std::fixed;
-	std::cout << std::setprecision(0);
+	std::cout << std::setprecision(2);
 }
 
 void Corpus::generate_voc_and_ctx()
@@ -54,7 +54,8 @@ void Corpus::generate_voc_and_ctx()
 
 					// update word-ctx freq for the middle word in ctx_hist
 					// (not exactly the middle, as Corpus::arrange_ctx already removed the first of the 2*wsize+1 elements)
-					ctx_hist[Context::window_size]->appears_in(*insc.first);
+					//ctx_hist[Context::window_size]->appears_in(*insc.first); // old
+					(*insc.first)->surround_word(*insw.first);
 				}
 			}
 			else
@@ -63,12 +64,34 @@ void Corpus::generate_voc_and_ctx()
 			// console feedback
 			print_read_info((float)fin.tellg() / fsize);
 		}
-
 		std::cout << "finished!" << std::endl;
 	}
+}
 
-	// TODO calc feature vectors
+void Corpus::calc_feature_vectors()
+{
+	if (vocabulary.empty() || contexts.empty())
+		throw std::exception("No vocabualary or context to work with!");
 
+	// init vector length for all words
+	for (auto word : vocabulary)
+		word->features.set_len(contexts.size());
+
+	// fill vectors
+	size_t vindex = 0;
+	size_t voc_size = vocabulary.size();
+	for (auto ctx : contexts)
+	{
+		size_t ctx_freq = ctx->get_freq();
+		std::for_each(ctx->surr_begin(), ctx->surr_end(),
+			[vindex, voc_size, ctx_freq] (const std::pair<WordPtr, size_t>& wcfreq) {
+				auto PMI = std::log( (double)(wcfreq.second * voc_size)
+					/ (wcfreq.first->get_freq() * ctx_freq) );
+				if (PMI > 0)
+					wcfreq.first->features[vindex] = PMI;
+		});
+		++vindex;
+	}
 }
 
 WordPtr Corpus::read_word(std::istream& stream)
