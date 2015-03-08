@@ -25,13 +25,10 @@ public:
 	static bool is_null_word(const Word& word);
     size_t get_freq() const;
     void inc_freq();
-    //void appears_in(shared_ptr<Context> ctx);
-    //void calc_features(size_t corpus_size); // called after freq and ctx_freq are given // old
     bool operator<(const Word& w) const;
 
 private:
     size_t freq;
-    //unordered_map<shared_ptr<Context>, size_t, std::hash<CtxPtr>, std::equal_to<CtxPtr>> ctx_freq;
 
 	Word() : word(""), freq(0) {} // create null Word
 };

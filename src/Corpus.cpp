@@ -2,9 +2,11 @@
 #include "Corpus.h"
 
 unordered_set<char> Corpus::forbidden_chars; // numbers, non-alphabetical characters
-set<string> Corpus::forbidden_words;
+unordered_set<string> Corpus::forbidden_words;
+unordered_set<char> Corpus::endofsentence_chars;
+bool Corpus::split_ctx_at_sentence = true;
 
-Corpus::Corpus()
+Corpus::Corpus(bool is_source_preprocessed_) : is_source_preprocessed(is_source_preprocessed_)
 {
 	std::cout << std::fixed;
 	std::cout << std::setprecision(2);
@@ -34,7 +36,7 @@ void Corpus::generate_voc_and_ctx()
 		read_print_state = 1;
 
 		ctx_hist.clear();
-		while (!fin.eof())
+		while (!fin.eof()) // TODO READ LINES INSTEAD
 		{
 			auto curr_word = read_word(fin);
 			if (curr_word.get() != nullptr)
@@ -57,6 +59,11 @@ void Corpus::generate_voc_and_ctx()
 					//ctx_hist[Context::window_size]->appears_in(*insc.first); // old
 					(*insc.first)->surround_word(*insw.first);
 				}
+
+				// split ctx at end of sentence
+				if (split_ctx_at_sentence
+					&& endofsentence_chars.find(curr_word->word.back()) != endofsentence_chars.end())
+					ctx_hist.clear();
 			}
 			else
 				ctx_hist.clear(); // if could not read word, start a new context buffer
@@ -98,7 +105,7 @@ WordPtr Corpus::read_word(std::istream& stream)
 {
 	string raw, wellf;
 	stream >> raw;
-	if (try_form_well(raw, wellf))
+	if (try_form_well(raw, wellf, is_source_preprocessed)) // if preprocessed, use lowcost
 	{
 		auto wordptr = std::make_shared<Word>(Word(wellf));
 		return wordptr;
@@ -118,38 +125,28 @@ CtxPtr Corpus::arrange_ctx(WordPtr curr_word)
 	return CtxPtr(nullptr);
 }
 
-bool Corpus::try_form_well(const string& orig, string& res)
+bool Corpus::try_form_well(string orig, string& res, bool lowcost)
 {
-	// to lowercase
-	string lower = orig;
-	std::transform(orig.begin(), orig.end(), lower.begin(), ::tolower);
+	if (!lowcost)
+	{
+		// to lowercase
+		std::transform(orig.begin(), orig.end(), orig.begin(), ::tolower);
 
-	// check if contains forbidden characters or characters outside [-1,255]
-	bool forbidden = false;
-	auto fchars_cpy = forbidden_chars;
-	std::for_each(lower.begin(), lower.end(),
-		[&forbidden, &fchars_cpy] (char c) {
-			if (c < -1 || c > 255
-				|| fchars_cpy.find(c) != fchars_cpy.end())
-			{
-				forbidden = true;
-				return;
-			}
-	});
-	if (forbidden) return false;
+		// check if contains forbidden characters or characters outside [-1,255]
+		bool forbidden = false;
+		for (auto lit = orig.begin(); !forbidden && lit != orig.end(); ++lit)
+				if (*lit < -1 || *lit > 255
+					|| forbidden_chars.find(*lit) != forbidden_chars.end())
+					forbidden = true;
+		if (forbidden) return false;
 
-	// check if a forbidden word
-	std::for_each(forbidden_words.begin(), forbidden_words.end(),
-		[&forbidden, lower] (const string& fword) {
-			if (lower.compare(fword) == 0)
-			{
-				forbidden = true;
-				return;
-			}
-	});
-	
+		// check if a forbidden word
+		if (forbidden_words.find(orig) != forbidden_words.end())
+			return false;
+	}
+
 	// remove punctuation
-	std::remove_copy_if(lower.begin(), lower.end(),
+	std::remove_copy_if(orig.begin(), orig.end(),
 		std::back_inserter(res),
 		std::ptr_fun<int, int>(&std::ispunct));
 
@@ -182,7 +179,28 @@ void Corpus::print_read_info(float rate)
 	}
 }
 
-bool Corpus::is_forbidden(const string& str)
+void Corpus::init()
+{
+	// forbidden characters
+	forbidden_chars.insert('<');
+	forbidden_chars.insert('>');
+	forbidden_chars.insert('|');
+	forbidden_chars.insert('/');
+	forbidden_chars.insert('\\');
+	forbidden_chars.insert('=');
+	for (char n = '0'; n <= '9'; ++n)
+		forbidden_chars.insert(n);
+
+	// forbidden words
+	forbidden_words.insert("endofarticle.");
+
+	// end-of-sentence characters
+	endofsentence_chars.insert('.');
+	endofsentence_chars.insert('?');
+	endofsentence_chars.insert('!');
+}
+
+/*bool Corpus::is_forbidden(const string& str)
 {
 	if (str.empty()) return false;
 
@@ -210,23 +228,7 @@ bool Corpus::is_forbidden(const string& str)
 	});
 
 	return !forbidden;
-}
-
-void Corpus::init_forbidden()
-{
-	// characters
-	forbidden_chars.insert('<');
-	forbidden_chars.insert('>');
-	forbidden_chars.insert('|');
-	forbidden_chars.insert('/');
-	forbidden_chars.insert('\\');
-	forbidden_chars.insert('=');
-	for (char n = '0'; n <= '9'; ++n)
-		forbidden_chars.insert(n);
-
-	// words
-	forbidden_words.insert("endofarticle.");
-}
+}*/
 
 /*void Corpus::gen_voc()
 {

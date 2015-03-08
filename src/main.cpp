@@ -12,7 +12,7 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	Corpus::init_forbidden();
+	Corpus::init();
 	Corpus corpus;
 	corpus.sources_path.push_back("c:/wiki_corpus/test");
 	corpus.generate_voc_and_ctx();
