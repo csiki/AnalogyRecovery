@@ -106,8 +106,8 @@ void Corpus::generate_voc_and_ctx()
 
 					// update word-ctx freq for the middle word in ctx_hist
 					// (not exactly the middle, as Corpus::arrange_ctx already removed the first of the 2*wsize+1 elements)
-					//ctx_hist[Context::window_size]->appears_in(*insc.first); // old
-					(*insc.first)->surround_word(*insw.first);
+					//ctx_hist[Context::window_size - 1]->appears_in(*insc.first); // old
+					(*insc.first)->surround_word(ctx_hist[Context::window_size - 1]);
 				}
 
 				// split ctx at end of sentence
