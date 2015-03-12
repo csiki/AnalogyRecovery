@@ -12,8 +12,8 @@ WordPtr Corpus::analogy_3_cos_add(WordPtr a, WordPtr a_, WordPtr b)
 	auto similar_to = b->features - a->features + a_->features;
 	return *std::max_element(vocabulary.begin(), vocabulary.end(),
 		[&similar_to] (const WordPtr& wpleft, const WordPtr& wpright) {
-			return SparseVector<double>::cos_sim(wpleft->features, similar_to)
-				< SparseVector<double>::cos_sim(wpright->features, similar_to);
+			return SparseVector<float>::cos_sim(wpleft->features, similar_to)
+				< SparseVector<float>::cos_sim(wpright->features, similar_to);
 	});
 }
 string Corpus::analogy_3_cos_add(string a, string a_, string b)
@@ -34,13 +34,13 @@ WordPtr Corpus::analogy_3_cos_mul(WordPtr a, WordPtr a_, WordPtr b)
 	return *std::max_element(vocabulary.begin(), vocabulary.end(),
 		[&a, &a_, &b] (const WordPtr& wpleft, const WordPtr& wpright) {
 			return
-				(SparseVector<double>::cos_sim(wpleft->features, b->features)
-				* SparseVector<double>::cos_sim(wpleft->features, a_->features)
-				/ (SparseVector<double>::cos_sim(wpleft->features, a->features) + analogy_eps))
+				(SparseVector<float>::cos_sim(wpleft->features, b->features)
+				* SparseVector<float>::cos_sim(wpleft->features, a_->features)
+				/ (SparseVector<float>::cos_sim(wpleft->features, a->features) + analogy_eps))
 				<
-				(SparseVector<double>::cos_sim(wpright->features, b->features)
-				* SparseVector<double>::cos_sim(wpright->features, a_->features)
-				/ (SparseVector<double>::cos_sim(wpright->features, a->features) + analogy_eps));
+				(SparseVector<float>::cos_sim(wpright->features, b->features)
+				* SparseVector<float>::cos_sim(wpright->features, a_->features)
+				/ (SparseVector<float>::cos_sim(wpright->features, a->features) + analogy_eps));
 	});
 }
 string Corpus::analogy_3_cos_mul(string a, string a_, string b)
@@ -106,8 +106,7 @@ void Corpus::generate_voc_and_ctx()
 
 					// update word-ctx freq for the middle word in ctx_hist
 					// (not exactly the middle, as Corpus::arrange_ctx already removed the first of the 2*wsize+1 elements)
-					//ctx_hist[Context::window_size]->appears_in(*insc.first); // old
-					(*insc.first)->surround_word(*insw.first);
+					ctx_hist[Context::window_size - 1]->appears_in(*insc.first); // old
 				}
 
 				// split ctx at end of sentence
@@ -115,8 +114,8 @@ void Corpus::generate_voc_and_ctx()
 					&& endofsentence_chars.find(curr_word->word.back()) != endofsentence_chars.end())
 					ctx_hist.clear();
 			}
-			else
-				ctx_hist.clear(); // if could not read word, start a new context buffer
+			//else
+			//	ctx_hist.clear(); // if could not read word, start a new context buffer
 
 			// console feedback
 			print_read_info((float)fin.tellg() / fsize);
@@ -137,16 +136,20 @@ void Corpus::calc_feature_vectors()
 	// fill vectors
 	size_t vindex = 0;
 	size_t voc_size = vocabulary.size();
+	
 	for (auto ctx : contexts)
 	{
-		size_t ctx_freq = ctx->get_freq();
-		std::for_each(ctx->surr_begin(), ctx->surr_end(),
-			[vindex, voc_size, ctx_freq] (const std::pair<WordPtr, size_t>& wcfreq) {
-				auto PMI = std::log( (double)(wcfreq.second * voc_size)
-					/ (wcfreq.first->get_freq() * ctx_freq) );
+		for (auto word : vocabulary)
+		{
+			auto ctxocc = word->ctxocc_find(ctx);
+			if (word->ctxocc_find(ctx) != word->ctxocc_end())
+			{
+				auto PMI = std::log( (float)(ctxocc->second * voc_size)
+					/ (word->get_freq() * ctx->get_freq()) );
 				if (PMI > 0)
-					wcfreq.first->features[vindex] = PMI;
-		});
+					word->features[vindex] = PMI;
+			}
+		}
 		++vindex;
 	}
 }
@@ -189,11 +192,11 @@ bool Corpus::try_form_well(string orig, string& res, bool lowcost)
 					|| forbidden_chars.find(*lit) != forbidden_chars.end())
 					forbidden = true;
 		if (forbidden) return false;
-
-		// check if a forbidden word
-		if (forbidden_words.find(orig) != forbidden_words.end())
-			return false;
 	}
+
+	// check if a forbidden word
+	if (forbidden_words.find(orig) != forbidden_words.end())
+		return false;
 
 	// remove punctuation
 	std::remove_copy_if(orig.begin(), orig.end(),
@@ -231,6 +234,25 @@ void Corpus::init()
 
 	// forbidden words
 	forbidden_words.insert("endofarticle.");
+	forbidden_words.insert("and");
+	forbidden_words.insert("the");
+	forbidden_words.insert("a");
+	forbidden_words.insert("an");
+	forbidden_words.insert("or");
+	forbidden_words.insert("to");
+	forbidden_words.insert("in");
+	forbidden_words.insert("by");
+	forbidden_words.insert("it");
+	forbidden_words.insert("he");
+	forbidden_words.insert("she");
+	forbidden_words.insert("for");
+	forbidden_words.insert("do");
+	forbidden_words.insert("in");
+	forbidden_words.insert("on");
+	forbidden_words.insert("from");
+	forbidden_words.insert("this");
+	forbidden_words.insert("i");
+	forbidden_words.insert("with");
 
 	// end-of-sentence characters
 	endofsentence_chars.insert('.');

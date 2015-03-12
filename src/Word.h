@@ -6,30 +6,34 @@
 #include <cmath>
 #include <string>
 #include "SparseVector.h"
+#include "Context.h"
 
 using std::string;
 using std::unordered_map;
 using std::shared_ptr;
 using std::pair;
 
-class Context;
+typedef map<shared_ptr<Context>, unsigned>::const_iterator CtxOccMapConstIt;
 
 class Word
 {
 public:
 	const string word;
-    SparseVector<double> features;
+    SparseVector<float> features;
 	
 	Word(string word);
 	static Word null_word();
 	static bool is_null_word(const Word& word);
     size_t get_freq() const;
     void inc_freq();
-    bool operator<(const Word& w) const;
+	void appears_in(const shared_ptr<Context> ctx);
+	CtxOccMapConstIt ctxocc_begin() const;
+	CtxOccMapConstIt ctxocc_end() const;
+	CtxOccMapConstIt ctxocc_find(const CtxPtr& ctx) const;
 
 private:
-    size_t freq;
-
+    unsigned freq;
+	map<shared_ptr<Context>, unsigned> context_occurence;
 	Word() : word(""), freq(0) {} // create null Word
 };
 
@@ -45,6 +49,12 @@ namespace std
 
 	template <>
 	struct equal_to<WordPtr>
+	{
+		bool operator()(const WordPtr& wp1, const WordPtr& wp2) const;
+	};
+
+	template <>
+	struct less<WordPtr>
 	{
 		bool operator()(const WordPtr& wp1, const WordPtr& wp2) const;
 	};
