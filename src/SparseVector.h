@@ -30,6 +30,24 @@ class SparseVector
 public:
 	SparseVector(size_t len_ = 0) : len(len_) {}
 
+	// analogy operators
+	static T cos_sim(const SparseVector& sv1, const SparseVector& sv2)
+	{
+		return (sv1 * sv2) / (sv1.abs() * sv2.abs());
+	}
+	static T cos_sim(SparseVector&& sv1, const SparseVector& sv2)
+	{
+		return (sv1 * sv2) / (sv1.abs() * sv2.abs());
+	}
+	static T cos_sim(const SparseVector& sv1, SparseVector&& sv2)
+	{
+		return (sv1 * sv2) / (sv1.abs() * sv2.abs());
+	}
+	static T cos_sim(SparseVector&& sv1, SparseVector&& sv2)
+	{
+		return (sv1 * sv2) / (sv1.abs() * sv2.abs());
+	}
+
 	// ordinary operators
     SparseVector operator+(const SparseVector& sv) const
 	{
@@ -153,9 +171,11 @@ public:
 
 	T abs() const
 	{
-		return std::sqrt(
-			std::for_each(values.begin(), values.end(),
-				[] (const T& val) { square_sum += val * val; }));
+		T sum = defval;
+		for (auto& v : values)
+			sum += v.second * v.second;
+
+		return std::sqrt(sum);
 	}
 
 	size_t get_len() const

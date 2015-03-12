@@ -7,25 +7,30 @@ const double Context::alpha = 0.9; // word in n distance get a alpha^0.9 multipl
 
 size_t std::hash<CtxPtr>::operator()(const CtxPtr& cp) const
 {
+	std::hash<string> string_hash;
+	size_t summed_hashes = 0;
+	for (auto wit = cp->words_begin(); wit != cp->words_end(); ++wit)
+		summed_hashes += string_hash((*wit)->word);
+	
 	std::hash<size_t> h;
-	return h(cp->hash());
+	return h(summed_hashes);
 }
 
 bool std::equal_to<CtxPtr>::operator()(const CtxPtr& cp1, const CtxPtr& cp2) const
 {
-	return std::equal(cp1->words_begin(), cp1->words_end(), cp2->words_begin(),
-		[] (const WordPtr& wp1, const WordPtr& wp2) {
-			return wp1->word == wp2->word;
-	});
+	for (auto wit = cp1->words_begin(); wit != cp1->words_end(); ++wit)
+		if (cp2->words_find(*wit) == cp2->words_end())
+			return false;
+	return true;
 }
 
-Context::Context(const deque<shared_ptr<Word>>& words_)
+Context::Context(const deque<WordPtr>& words_)
 {
-	words = words_;
-	hash(true);
+	words.insert(words_.begin(), words_.end());
+	hash(true); // update hash
 }
 
-void Context::surround_word(shared_ptr<Word> word)
+void Context::surround_word(WordPtr word)
 {
 	auto insw = surrounded.insert(std::make_pair(word, 1));
 	if (!insw.second)
@@ -44,7 +49,7 @@ void Context::inc_freq()
 
 void Context::expandContext(WordPtr word)
 {
-	words.push_back(word);
+	words.insert(word);
 	hash_val = hash(true); // update hash
 }
 
@@ -71,14 +76,19 @@ size_t Context::hash(bool update)
     return hash_val;
 }
 
-ConstDeqIt Context::words_begin() const
+ConstUnsIt Context::words_begin() const
 {
 	return words.begin();
 }
 
-ConstDeqIt Context::words_end() const
+ConstUnsIt Context::words_end() const
 {
 	return words.end();
+}
+
+ConstUnsIt Context::words_find(const WordPtr& wp) const
+{
+	return words.find(wp);
 }
 
 ConstUMapIt Context::surr_begin() const

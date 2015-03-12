@@ -5,6 +5,56 @@ unordered_set<char> Corpus::forbidden_chars; // numbers, non-alphabetical charac
 unordered_set<string> Corpus::forbidden_words;
 unordered_set<char> Corpus::endofsentence_chars;
 bool Corpus::split_ctx_at_sentence = true;
+double Corpus::analogy_eps = 1e-4;
+
+WordPtr Corpus::analogy_3_cos_add(WordPtr a, WordPtr a_, WordPtr b)
+{
+	auto similar_to = b->features - a->features + a_->features;
+	return *std::max_element(vocabulary.begin(), vocabulary.end(),
+		[&similar_to] (const WordPtr& wpleft, const WordPtr& wpright) {
+			return SparseVector<double>::cos_sim(wpleft->features, similar_to)
+				< SparseVector<double>::cos_sim(wpright->features, similar_to);
+	});
+}
+string Corpus::analogy_3_cos_add(string a, string a_, string b)
+{
+	WordPtr dummy_aptr(new Word(a));
+	WordPtr dummy_a_ptr(new Word(a_));
+	WordPtr dummy_bptr(new Word(b));
+
+	auto aptr = *vocabulary.find(dummy_aptr);
+	auto a_ptr = *vocabulary.find(dummy_a_ptr);
+	auto bptr = *vocabulary.find(dummy_bptr);
+
+	return analogy_3_cos_add(aptr, a_ptr, bptr)->word;
+}
+
+WordPtr Corpus::analogy_3_cos_mul(WordPtr a, WordPtr a_, WordPtr b)
+{
+	return *std::max_element(vocabulary.begin(), vocabulary.end(),
+		[&a, &a_, &b] (const WordPtr& wpleft, const WordPtr& wpright) {
+			return
+				(SparseVector<double>::cos_sim(wpleft->features, b->features)
+				* SparseVector<double>::cos_sim(wpleft->features, a_->features)
+				/ (SparseVector<double>::cos_sim(wpleft->features, a->features) + analogy_eps))
+				<
+				(SparseVector<double>::cos_sim(wpright->features, b->features)
+				* SparseVector<double>::cos_sim(wpright->features, a_->features)
+				/ (SparseVector<double>::cos_sim(wpright->features, a->features) + analogy_eps));
+	});
+}
+string Corpus::analogy_3_cos_mul(string a, string a_, string b)
+{
+	WordPtr dummy_aptr(new Word(a));
+	WordPtr dummy_a_ptr(new Word(a_));
+	WordPtr dummy_bptr(new Word(b));
+
+	auto aptr = *vocabulary.find(dummy_aptr);
+	auto a_ptr = *vocabulary.find(dummy_a_ptr);
+	auto bptr = *vocabulary.find(dummy_bptr);
+
+	return analogy_3_cos_mul(aptr, a_ptr, bptr)->word;
+}
 
 Corpus::Corpus(bool is_source_preprocessed_) : is_source_preprocessed(is_source_preprocessed_)
 {
@@ -162,20 +212,8 @@ void Corpus::print_read_info(float rate)
 	if (rate * 10 > read_print_state)
 	{
 		++read_print_state;
-		std::cout << rate * 100.0 << "% ";
-
-		/*// most frequent word
-		size_t maxnum = 0;
-		string maxword;
-		for (auto w : vocabulary)
-		{
-			if (maxnum < w->get_freq())
-			{
-				maxnum = w->get_freq();
-				maxword = w->word;
-			}
-		}
-		std::cout << "word with most freq: " << maxword << " - " << maxnum << " / " << vocabulary.size() << std::endl;*/
+		std::cout << rate * 100.0 << "% - ";
+		std::cout << "voc size: " << vocabulary.size() << "; ctx size: " << contexts.size() << std::endl;
 	}
 }
 
@@ -199,67 +237,3 @@ void Corpus::init()
 	endofsentence_chars.insert('?');
 	endofsentence_chars.insert('!');
 }
-
-/*bool Corpus::is_forbidden(const string& str)
-{
-	if (str.empty()) return false;
-
-	// check if forbidden
-	bool forbidden = false;
-	std::for_each(forbidden_words.begin(), forbidden_words.end(),
-		[&forbidden, str] (const string& fword) {
-			if (std::mismatch(str.begin(), str.end(), fword.begin()).second == fword.end())
-			{
-				forbidden = true;
-				return;
-			}
-	});
-	if (forbidden) return false;
-
-	// check if contains forbidden characters
-	auto fchars_cpy = forbidden_chars;
-	std::for_each(str.begin(), str.end(),
-		[&forbidden, &fchars_cpy] (char c) {
-			if (fchars_cpy.find(c) != fchars_cpy.end())
-			{
-				forbidden = true;
-				return;
-			}
-	});
-
-	return !forbidden;
-}*/
-
-/*void Corpus::gen_voc()
-{
-	for (auto& s : source)
-	{
-		std::ifstream fin(s, std::ios::in);
-		if (!fin)
-		{
-			string errmsg = "File ";
-			errmsg += s;
-			errmsg += " cannot be opened!";
-			throw std::exception(errmsg.c_str());
-		}
-		
-		// read word by word
-		string raw;
-		while (fin >> raw)
-		{
-			string wellf;
-			if (try_form_well(raw, wellf))
-			{
-				auto wordptr = std::make_shared<Word>(Word(wellf));
-				auto ins = vocabulary.insert(wordptr);
-				if (!ins.second)
-					(*ins.first)->inc_freq(); // not inserted, thus already inside
-			}
-		}
-	}
-}
-
-void Corpus::gen_ctx()
-{
-	// TODO
-}*/

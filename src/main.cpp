@@ -185,7 +185,8 @@ int main(int argc, char* argv[])
 	corpus.generate_voc_and_ctx();
 	corpus.calc_feature_vectors();
 
-	cout << "rudi" << endl;
+	cout << "3CosAdd: " << corpus.analogy_3_cos_add("man", "woman", "king") << endl;
+	cout << "3CosMul: " << corpus.analogy_3_cos_mul("man", "woman", "king") << endl;
 
 	return 0;
 }

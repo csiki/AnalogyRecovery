@@ -35,6 +35,12 @@ public:
     unordered_set<CtxPtr, std::hash<CtxPtr>, std::equal_to<CtxPtr>> contexts;
 	static bool split_ctx_at_sentence;
     
+	/// Returns a word that fits best (in corpus) to 'b' as 'a' fits to 'a_' (analogy).
+	WordPtr analogy_3_cos_add(WordPtr a, WordPtr a_, WordPtr b);
+	string analogy_3_cos_add(string a, string a_, string b);
+	WordPtr analogy_3_cos_mul(WordPtr a, WordPtr a_, WordPtr b);
+	string analogy_3_cos_mul(string a, string a_, string b);
+
 	Corpus(bool is_source_preprocessed_ = false);
     void generate_voc_and_ctx();
 	void calc_feature_vectors();
@@ -46,6 +52,7 @@ private:
 	static unordered_set<char> forbidden_chars;
 	static unordered_set<string> forbidden_words;
 	static unordered_set<char> endofsentence_chars;
+	static double analogy_eps;
 	deque<WordPtr> ctx_hist;
 	unsigned char read_print_state;
 	bool is_source_preprocessed; // use lowcost try_form_well() if true
