@@ -2,35 +2,28 @@
 #include "Context.h"
 #include "Word.h"
 
-const size_t Context::window_size = 2; // 2 left, 2 right from the word
-const double Context::alpha = 0.9; // word in n distance get a alpha^0.9 multiplier
+const unsigned char Context::window_size = 2; // 2 left, 2 right from the word
+const double Context::distance_multiplier = 0.9; // word in n distance get a alpha^0.9 multiplier
 
 size_t std::hash<CtxPtr>::operator()(const CtxPtr& cp) const
 {
-	std::hash<string> string_hash;
-	size_t summed_hashes = 0;
-	for (auto wit = cp->words_begin(); wit != cp->words_end(); ++wit)
-		summed_hashes += string_hash((*wit)->word);
-	
-	std::hash<size_t> h;
-	return h(summed_hashes);
+	std::hash<string> h;
+	return h(cp->ctx->word) + cp->pos;
 }
 
 bool std::equal_to<CtxPtr>::operator()(const CtxPtr& cp1, const CtxPtr& cp2) const
 {
-	for (auto wit = cp1->words_begin(); wit != cp1->words_end(); ++wit)
-		if (cp2->words_find(*wit) == cp2->words_end())
-			return false;
-	return true;
+	return cp1->pos == cp2->pos && cp1->ctx == cp2->ctx;
 }
 
-Context::Context(const deque<WordPtr>& words_)
+bool std::less<CtxPtr>::operator()(const CtxPtr& cp1, const CtxPtr& cp2) const
 {
-	words.insert(words_.begin(), words_.end());
-	hash(true); // update hash
+	return cp1->ctx < cp2->ctx || (cp1->ctx == cp2->ctx && cp1->pos < cp2->pos);
 }
 
-void Context::surround_word(WordPtr word)
+Context::Context(WordPtr ctx_, signed char pos_, size_t freq_, SurrMap surrounded_) : ctx(ctx_), pos(pos_), freq(freq_), surrounded(surrounded_) {}
+
+void Context::surround_word(WordPtr word, size_t freq_from)
 {
 	auto insw = surrounded.insert(std::make_pair(word, 1));
 	if (!insw.second)
@@ -47,50 +40,6 @@ void Context::inc_freq()
 	++freq;
 }
 
-void Context::expandContext(WordPtr word)
-{
-	words.insert(word);
-	hash_val = hash(true); // update hash
-}
-
-bool Context::operator<(const Context& ctx) const
-{
-	return hash_val < ctx.hash_val;
-}
-
-size_t Context::hash(bool update)
-{
-	if (update || hash_val == 0)
-	{
-		// concat words
-		string str;
-		for (auto w : words)
-			str += w->word;
-		// calc hash
-		hash_val = 0;
-		auto str_c = str.c_str();
-		while (*str_c)
-		   hash_val = hash_val << 1 ^ *str_c++;
-	}
-
-    return hash_val;
-}
-
-ConstUnsIt Context::words_begin() const
-{
-	return words.begin();
-}
-
-ConstUnsIt Context::words_end() const
-{
-	return words.end();
-}
-
-ConstUnsIt Context::words_find(const WordPtr& wp) const
-{
-	return words.find(wp);
-}
-
 ConstUMapIt Context::surr_begin() const
 {
 	return surrounded.begin();
@@ -99,4 +48,53 @@ ConstUMapIt Context::surr_begin() const
 ConstUMapIt Context::surr_end() const
 {
 	return surrounded.end();
+}
+
+void Context::update_surr(const unordered_set<WordPtr, std::hash<WordPtr>, std::equal_to<WordPtr>>& vocabulary)
+{
+	SurrMap tmp_surr;
+	for (auto& s : surrounded)
+	{
+		auto real_wp = vocabulary.find(s.first);
+		if (real_wp == vocabulary.end())
+			throw std::exception("Word in context cannot be found in the vocabulary");
+		tmp_surr.insert(std::make_pair(*real_wp, s.second));
+	}
+	surrounded = tmp_surr;
+}
+
+std::ostream& operator<<(std::ostream& out, const CtxPtr& cp)
+{
+	out << cp->ctx->word << " " << cp->get_freq() << " " << cp->pos << " ";
+	for (auto s = cp->surr_begin(); s != cp->surr_end(); ++s)
+	{
+		out << s->first->word << " " << s->second << " ";
+	}
+	out << std::endl;
+	return out;
+}
+
+std::istream& operator>>(std::istream& in, CtxPtr& wp)
+{
+	string line;
+	std::getline(in, line, '\n');
+	std::istringstream ssline(line);
+
+	string ctx_s;
+	WordPtr ctx;
+	size_t freq;
+	signed char pos;
+	SurrMap surrounded;
+
+	ssline >> ctx_s >> freq >> pos;
+	string word;
+	size_t wfreq;
+	while (!ssline.eof())
+	{
+		ssline >> word >> wfreq;
+		surrounded.insert(std::make_pair(std::make_shared<Word>(Word(word, 0)), wfreq));
+	}
+
+	wp = std::make_shared<Context>(Context(std::make_shared<Word>(ctx_s), pos, freq, surrounded));
+	return in;
 }

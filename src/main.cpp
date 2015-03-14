@@ -12,6 +12,8 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
+	cout << sizeof(Word) << endl;
+
 	Corpus::init();
 	Corpus corpus(true);
 
@@ -187,6 +189,12 @@ int main(int argc, char* argv[])
 
 	cout << "3CosAdd: " << corpus.analogy_3_cos_add("man", "woman", "king") << endl;
 	cout << "3CosMul: " << corpus.analogy_3_cos_mul("man", "woman", "king") << endl;
+
+	cout << "Saving vocabulary and contexts" << endl;
+
+	std::ofstream voc_out("vocabulary.dat", ios::out | ios::trunc);
+	std::ofstream ctx_out("contexts.dat", ios::out | ios::trunc);
+	corpus.ser_voc_and_ctx(voc_out, ctx_out);
 
 	return 0;
 }

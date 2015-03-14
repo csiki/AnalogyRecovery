@@ -14,9 +14,10 @@ bool std::equal_to<WordPtr>::operator()(const WordPtr& wp1, const WordPtr& wp2) 
 	return e(wp1->word, wp2->word);
 }
 
-Word::Word(string word_) : word(word_)
+bool std::less<WordPtr>::operator()(const WordPtr& wp1, const WordPtr& wp2) const
 {
-	freq = 1;
+	std::less<string> e;
+	return e(wp1->word, wp2->word);
 }
 
 Word Word::null_word()
@@ -42,4 +43,19 @@ void Word::inc_freq()
 bool Word::operator<(const Word& w) const
 {
     return std::lexicographical_compare(word.begin(), word.end(), w.word.begin(), w.word.end());
+}
+
+std::ostream& operator<<(std::ostream& out, const WordPtr& wp)
+{
+	out << wp->word << " " << wp->get_freq() << std::endl;
+	return out;
+}
+
+std::istream& operator>>(std::istream& in, WordPtr& wp)
+{
+	string word;
+	size_t freq;
+	in >> word >> freq;
+	wp = std::make_shared<Word>(Word(word, freq));
+	return in;
 }

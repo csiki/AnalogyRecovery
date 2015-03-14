@@ -18,9 +18,9 @@ class Word
 {
 public:
 	const string word;
-    SparseVector<double> features;
+    SparseVector<float> features;
 	
-	Word(string word);
+	Word::Word(string word_, size_t freq_from = 1) : word(word_), freq(freq_from) {}
 	static Word null_word();
 	static bool is_null_word(const Word& word);
     size_t get_freq() const;
@@ -28,12 +28,15 @@ public:
     bool operator<(const Word& w) const;
 
 private:
-    size_t freq;
+    unsigned freq;
 
 	Word() : word(""), freq(0) {} // create null Word
 };
 
 typedef shared_ptr<Word> WordPtr;
+
+std::ostream& operator<<(std::ostream& out, const WordPtr& wp);
+std::istream& operator>>(std::istream& in, WordPtr& wp);
 
 namespace std
 {
@@ -45,6 +48,12 @@ namespace std
 
 	template <>
 	struct equal_to<WordPtr>
+	{
+		bool operator()(const WordPtr& wp1, const WordPtr& wp2) const;
+	};
+
+	template <>
+	struct less<WordPtr>
 	{
 		bool operator()(const WordPtr& wp1, const WordPtr& wp2) const;
 	};

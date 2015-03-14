@@ -46,7 +46,8 @@ public:
 	void calc_feature_vectors();
 	static bool try_form_well(string orig, string& res, bool lowcost = true);
 	static void init();
-	//static bool is_forbidden(const string& str);
+	void ser_voc_and_ctx(std::ostream& voc_out, std::ostream& ctx_out) const;
+	void deser_voc_and_ctx(std::istream& voc_in, std::istream& ctx_in);
 
 private:
 	static unordered_set<char> forbidden_chars;
@@ -55,10 +56,10 @@ private:
 	static double analogy_eps;
 	deque<WordPtr> ctx_hist;
 	unsigned char read_print_state;
-	bool is_source_preprocessed; // use lowcost try_form_well() if true
+	bool is_source_preprocessed; // use low cpu cost try_form_well() if true
 
 	WordPtr read_word(std::istream& stream);
-	CtxPtr arrange_ctx(WordPtr curr_word);
+	vector<CtxPtr> arrange_ctx(WordPtr curr_word);
 	void print_read_info(float rate);
 };
 
