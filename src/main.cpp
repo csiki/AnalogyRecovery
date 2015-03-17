@@ -12,14 +12,12 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	cout << sizeof(Word) << endl;
-
 	Corpus::init();
 	Corpus corpus(true);
 
 	// add sources
 	string path = "c:/wiki_corpus/";
-	corpus.sources_path.push_back(path + "englishText_0_10000_parsed");
+	/*corpus.sources_path.push_back(path + "englishText_0_10000_parsed");
 	corpus.sources_path.push_back(path + "englishText_1000000_1010000_parsed");
 	corpus.sources_path.push_back(path + "englishText_100000_110000_parsed");
 	corpus.sources_path.push_back(path + "englishText_10000_20000_parsed");
@@ -182,19 +180,115 @@ int main(int argc, char* argv[])
 	corpus.sources_path.push_back(path + "englishText_960000_970000_parsed");
 	corpus.sources_path.push_back(path + "englishText_970000_980000_parsed");
 	corpus.sources_path.push_back(path + "englishText_980000_990000_parsed");
-	corpus.sources_path.push_back(path + "englishText_990000_1000000_parsed");
+	corpus.sources_path.push_back(path + "englishText_990000_1000000_parsed");*/
+	
+	/// MAIN STUFF: VOC, CTX MAKER
+	/*corpus.sources_path.push_back(path + "test_parsed");
+	try {
+		corpus.generate_voc();
+		corpus.generate_ctx();
 
-	corpus.generate_voc_and_ctx();
-	corpus.calc_feature_vectors();
+		cout << "Saving vocabulary and contexts" << endl;
+		std::ofstream voc_out("vocabulary.dat", ios::out | ios::trunc);
+		std::ofstream ctx_out("contexts.dat", ios::out | ios::trunc);
+		corpus.ser_voc_and_ctx(voc_out, ctx_out);
 
-	cout << "3CosAdd: " << corpus.analogy_3_cos_add("man", "woman", "king") << endl;
-	cout << "3CosMul: " << corpus.analogy_3_cos_mul("man", "woman", "king") << endl;
+		cout << "Calculating feature vectors" << endl;
+		corpus.calc_feature_vectors();
 
-	cout << "Saving vocabulary and contexts" << endl;
+		cout << "Saving feature vectors" << endl;
+		std::ofstream voc_vec_out("word_vectors.dat", ios::out | ios::trunc);
+		corpus.ser_voc_sparse_vec(voc_vec_out);
 
-	std::ofstream voc_out("vocabulary.dat", ios::out | ios::trunc);
-	std::ofstream ctx_out("contexts.dat", ios::out | ios::trunc);
-	corpus.ser_voc_and_ctx(voc_out, ctx_out);
+		cout << "3CosAdd: " << corpus.analogy_3_cos_add("man", "woman", "king") << endl;
+		cout << "3CosMul: " << corpus.analogy_3_cos_mul("man", "woman", "king") << endl;
+	}
+	catch (std::exception& e)
+	{
+		cout << e.what() << endl;
+	}*/
+
+	/// VOC, CTX LOADER, FEATURE CALCULATOR TESTER
+	/*try {
+		std::ifstream voc_in("vocabulary.dat", ios::in);
+		std::ifstream ctx_in("contexts.dat", ios::in);
+		corpus.deser_voc_and_ctx(voc_in, ctx_in);
+		corpus.calc_feature_vectors();
+		
+		cout << "Saving word vectors" << endl;
+		std::ofstream voc_vec_out("word_vectors.dat", ios::out | ios::trunc);
+		corpus.ser_voc_sparse_vec(voc_vec_out);
+
+		cout << "3CosAdd: " << corpus.analogy_3_cos_add("man", "woman", "king") << endl;
+		cout << "3CosMul: " << corpus.analogy_3_cos_mul("man", "woman", "king") << endl;
+	} catch (std::exception& e) { cout << e.what() << endl; }*/
+
+	
+	// TODO clean this mess ...
+
+
+	/// SPARSE VEC LOADER AND TESTER
+	std::ifstream wvec_in("word_vectors.dat", ios::in);
+	try {
+		corpus.deser_voc_sparse_vec(wvec_in);
+		cout << "3CosAdd: " << corpus.analogy_3_cos_add("is", "are", "was") << endl;
+		cout << "3CosMul: " << corpus.analogy_3_cos_mul("is", "are", "was") << endl;
+
+		cout << "3CosAdd: " << corpus.analogy_3_cos_add("small", "big", "tiny") << endl;
+		cout << "3CosMul: " << corpus.analogy_3_cos_mul("small", "big", "tiny") << endl;
+
+		cout << "3CosAdd: " << corpus.analogy_3_cos_add("man", "woman", "king") << endl;
+		cout << "3CosMul: " << corpus.analogy_3_cos_mul("man", "woman", "king") << endl;
+
+		cout << "3CosAdd: " << corpus.analogy_3_cos_add("dog", "pet", "lion") << endl;
+		cout << "3CosMul: " << corpus.analogy_3_cos_mul("dog", "pet", "lion") << endl;
+
+		cout << "3CosAdd: " << corpus.analogy_3_cos_add("kitchen", "toaster", "livingroom") << endl;
+		cout << "3CosMul: " << corpus.analogy_3_cos_mul("kitchen", "toaster", "livingroom") << endl;
+	}
+	catch (std::exception& e)
+	{
+		cout << e.what() << endl;
+	}
+
+
+	/// OTHER TEST STUFF
+	/*auto wp = make_shared<Word>(Word("vmi", 10));
+	auto wp_surr = make_shared<Word>(Word("surr", 8));
+	SurrMap sm;
+	sm.insert(std::make_pair(wp_surr, 100));
+	auto cp = unique_ptr<Context>(new Context(wp, -2, 5, sm));
+
+	corpus.vocabulary.insert(wp);
+	corpus.vocabulary.insert(wp_surr);
+	corpus.contexts.insert(std::move(cp));
+	std::fstream probav("probav.dat", ios::out | ios::trunc);
+	std::fstream probac("probac.dat", ios::out | ios::trunc);
+	corpus.ser_voc_and_ctx(probav, probac);
+
+	probav.close();
+	probac.close();
+	probav.open("probav.dat", ios::in);
+	probac.open("probac.dat", ios::in);
+	Corpus corpus2(true);
+	corpus2.deser_voc_and_ctx(probav, probac);
+	
+	corpus2.calc_feature_vectors();
+	std::ofstream svec_out("svec.dat", ios::out | ios::trunc);
+	corpus2.ser_voc_sparse_vec(svec_out);
+
+	for (auto& v : corpus2.vocabulary)
+		cout << v;
+	cout << "contexts: " << endl;
+	for (auto& c : corpus2.contexts)
+		cout << c << endl;*/
+	
+	/*proba << cp;
+	proba.close();
+	proba.open("proba.dat", ios::in);
+	CtxPtr cp2;
+	proba >> cp2;
+	cout << cp2;*/
 
 	return 0;
 }

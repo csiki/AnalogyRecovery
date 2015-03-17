@@ -33,7 +33,7 @@ private:
 	Word() : word(""), freq(0) {} // create null Word
 };
 
-typedef shared_ptr<Word> WordPtr;
+typedef shared_ptr<Word> WordPtr; // FIXME to unique_ptr
 
 std::ostream& operator<<(std::ostream& out, const WordPtr& wp);
 std::istream& operator>>(std::istream& in, WordPtr& wp);

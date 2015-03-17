@@ -9,6 +9,7 @@
 #include <numeric>
 #include <set>
 #include <iostream>
+#include <sstream>
 
 using std::map;
 using std::pair;
@@ -227,16 +228,19 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& out, const SparseVector& sv)
 	{
-		if (sv.values.empty())
-			out << "[ ]";
-		else
-		{
-			out << "[ ..." << std::endl;
-			for (auto& v : sv.values)
-				out << "  " << v.first << ": " << v.second << std::endl;
-			out << "  ... ]";
-		}
+		for (auto& valpair : sv.values)
+			out << valpair.first << " " << valpair.second << " ";
 		return out;
+	}
+
+	friend std::istream& operator>>(std::istream& in, SparseVector<T>& sv) // gets a stringstream of one line
+	{
+		size_t index;
+		T val;
+		while (in >> index >> val)
+			sv[index] = val;
+		
+		return in;
 	}
 
 	static bool keys_less_than(const pair<size_t, T>& v1, const pair<size_t, T>& v2)
@@ -247,7 +251,7 @@ public:
 private:
 	static T defval; // always additive identity ~ like 0
 	size_t len;
-    map<size_t, T> values;
+    map<unsigned, T> values;
 
 	void check_compatibility(const SparseVector& sv) const
 	{

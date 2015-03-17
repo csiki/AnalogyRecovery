@@ -5,7 +5,9 @@ unordered_set<char> Corpus::forbidden_chars; // numbers, non-alphabetical charac
 unordered_set<string> Corpus::forbidden_words;
 unordered_set<char> Corpus::endofsentence_chars;
 bool Corpus::split_ctx_at_sentence = true;
-double Corpus::analogy_eps = 1e-4;
+size_t Corpus::min_num_of_occurrence = 2; // TODO
+double Corpus::detail_multiplier = 5.0; // TODO check for other values
+const double Corpus::analogy_eps = 1e-4;
 
 WordPtr Corpus::analogy_3_cos_add(WordPtr a, WordPtr a_, WordPtr b)
 {
@@ -18,20 +20,23 @@ WordPtr Corpus::analogy_3_cos_add(WordPtr a, WordPtr a_, WordPtr b)
 }
 string Corpus::analogy_3_cos_add(string a, string a_, string b)
 {
-	WordPtr dummy_aptr(new Word(a));
-	WordPtr dummy_a_ptr(new Word(a_));
-	WordPtr dummy_bptr(new Word(b));
+	auto dummy_aptr = std::make_shared<Word>(Word(a));
+	auto dummy_a_ptr = std::make_shared<Word>(Word(a_));
+	auto dummy_bptr = std::make_shared<Word>(Word(b));
 
-	auto aptr = *vocabulary.find(dummy_aptr);
-	auto a_ptr = *vocabulary.find(dummy_a_ptr);
-	auto bptr = *vocabulary.find(dummy_bptr);
+	auto aptr = vocabulary.find(dummy_aptr);
+	auto a_ptr = vocabulary.find(dummy_a_ptr);
+	auto bptr = vocabulary.find(dummy_bptr);
 
-	return analogy_3_cos_add(aptr, a_ptr, bptr)->word;
+	if (aptr == vocabulary.end() || a_ptr == vocabulary.end() || bptr == vocabulary.end())
+		throw std::exception("Given word not found in analogy task!");
+
+	return analogy_3_cos_add(*aptr, *a_ptr, *bptr)->word;
 }
 
 WordPtr Corpus::analogy_3_cos_mul(WordPtr a, WordPtr a_, WordPtr b)
 {
-	return *std::max_element(vocabulary.begin(), vocabulary.end(),
+	return *std::max_element(vocabulary.begin(), vocabulary.end(), // TODO replace with simple loop
 		[&a, &a_, &b] (const WordPtr& wpleft, const WordPtr& wpright) {
 			return
 				(SparseVector<float>::cos_sim(wpleft->features, b->features)
@@ -45,15 +50,18 @@ WordPtr Corpus::analogy_3_cos_mul(WordPtr a, WordPtr a_, WordPtr b)
 }
 string Corpus::analogy_3_cos_mul(string a, string a_, string b)
 {
-	WordPtr dummy_aptr(new Word(a));
-	WordPtr dummy_a_ptr(new Word(a_));
-	WordPtr dummy_bptr(new Word(b));
+	auto dummy_aptr = std::make_shared<Word>(Word(a));
+	auto dummy_a_ptr = std::make_shared<Word>(Word(a_));
+	auto dummy_bptr = std::make_shared<Word>(Word(b));
 
-	auto aptr = *vocabulary.find(dummy_aptr);
-	auto a_ptr = *vocabulary.find(dummy_a_ptr);
-	auto bptr = *vocabulary.find(dummy_bptr);
+	auto aptr = vocabulary.find(dummy_aptr);
+	auto a_ptr = vocabulary.find(dummy_a_ptr);
+	auto bptr = vocabulary.find(dummy_bptr);
 
-	return analogy_3_cos_mul(aptr, a_ptr, bptr)->word;
+	if (aptr == vocabulary.end() || a_ptr == vocabulary.end() || bptr == vocabulary.end())
+		throw std::exception("Given word not found in analogy task!");
+
+	return analogy_3_cos_mul(*aptr, *a_ptr, *bptr)->word;
 }
 
 Corpus::Corpus(bool is_source_preprocessed_) : is_source_preprocessed(is_source_preprocessed_)
@@ -62,10 +70,51 @@ Corpus::Corpus(bool is_source_preprocessed_) : is_source_preprocessed(is_source_
 	std::cout << std::setprecision(2);
 }
 
-void Corpus::generate_voc_and_ctx()
+void Corpus::generate_voc()
 {
 	if (sources_path.empty())
-		throw std::exception("Corpus has no source to generate vocabulary and contexts from!");
+		throw std::exception("Corpus has no source to generate the vocabulary from!");
+
+	for (auto& s : sources_path)
+	{
+		std::ifstream fin(s, std::ios::in);
+		if (!fin)
+		{
+			string errmsg = "File ";
+			errmsg += s;
+			errmsg += " cannot be opened!";
+			throw std::exception(errmsg.c_str());
+		}
+		std::cout << "Source " << s << " is being processed." << std::endl << "Vocabulary size sofar: " << vocabulary.size() << std::endl;
+
+		while (!fin.eof())
+		{
+			auto curr_word = read_word(fin);
+			if (curr_word.get() != nullptr)
+			{
+				// add word to vocabulary
+				auto insw = vocabulary.insert(curr_word);
+				if (!insw.second)
+					(*insw.first)->inc_freq(); // not inserted, thus already inside
+			}
+		}
+	}
+	// remove words with low occurrence
+	for (auto vit = vocabulary.begin(); vit != vocabulary.end(); )
+	{
+		if ((*vit)->get_freq() < min_num_of_occurrence)
+			vit = vocabulary.erase(vit);
+		else
+			++vit;
+	}
+}
+
+void Corpus::generate_ctx()
+{
+	if (sources_path.empty())
+		throw std::exception("Corpus has no source to generate the contexts from!");
+	if (vocabulary.empty())
+		throw std::exception("Call generate_voc first - vocabulary is empty!");
 
 	for (auto& s : sources_path)
 	{
@@ -86,38 +135,25 @@ void Corpus::generate_voc_and_ctx()
 		read_print_state = 1;
 
 		ctx_hist.clear();
-		while (!fin.eof()) // TODO READ LINES INSTEAD
+		string line;
+		while (std::getline(fin, line, '\n')) // read line (sentence in processed data)
 		{
-			auto curr_word = read_word(fin);
-			if (curr_word.get() != nullptr)
+			std::istringstream ssline(line, std::ios::in);
+			while (!ssline.eof())
 			{
-				// add word to vocabulary
-				auto insw = vocabulary.insert(curr_word);
-				if (!insw.second)
-					(*insw.first)->inc_freq(); // not inserted, thus already inside
-
-				auto curr_ctxs = arrange_ctx(*insw.first);
-				if (!curr_ctxs.empty())
+				auto curr_word = read_word(ssline);
+				if (curr_word.get() != nullptr)
 				{
-					// add context
-					for (auto c : curr_ctxs)
-					{
-						auto insc = contexts.insert(c);
-						if (!insc.second)
-							(*insc.first)->inc_freq(); // not inserted, thus already inside
-						// update word-ctx freq for the middle word in ctx_hist
-						// (not exactly the middle, as Corpus::arrange_ctx already removed the first of the 2*wsize+1 elements)
-						(*insc.first)->surround_word(ctx_hist[Context::window_size - 1]);
-					}
+					auto word_found = vocabulary.find(curr_word);
+					if (word_found != vocabulary.end())
+						arrange_ctx(*word_found);
+					else
+						insert_null_to_ctx_hist(); // insert dummy wordptr
 				}
-				// split ctx at end of sentence
-				if (split_ctx_at_sentence
-					&& endofsentence_chars.find(curr_word->word.back()) != endofsentence_chars.end())
-					ctx_hist.clear();
+				else insert_null_to_ctx_hist();
 			}
-			//else
-			//	ctx_hist.clear(); // if could not read word, start a new context buffer
-
+			ctx_hist.clear(); // after every line (sentence) clear history
+			
 			// console feedback
 			print_read_info((float)fin.tellg() / fsize);
 		}
@@ -140,9 +176,10 @@ void Corpus::calc_feature_vectors()
 	{
 		auto ctx_freq = ctx->get_freq();
 		auto dist_mul = std::pow(Context::distance_multiplier, std::abs(ctx->pos));
+
 		std::for_each(ctx->surr_begin(), ctx->surr_end(),
 			[vindex, voc_size, ctx_freq, dist_mul] (const std::pair<WordPtr, size_t>& wcfreq) {
-				auto PMI = std::log( (float)(wcfreq.second * voc_size) * dist_mul
+				auto PMI = std::logf( (float)(wcfreq.second * voc_size) * dist_mul * detail_multiplier // TODO
 					/ (wcfreq.first->get_freq() * ctx_freq) );
 				if (PMI > 0)
 					wcfreq.first->features[vindex] = PMI;
@@ -167,12 +204,43 @@ void Corpus::deser_voc_and_ctx(std::istream& voc_in, std::istream& ctx_in)
 	WordPtr wp;
 	while (voc_in >> wp)
 		vocabulary.insert(wp);
-	
-	CtxPtr cp;
+
+	CtxPtr cp(nullptr);
 	while (ctx_in >> cp)
 	{
 		cp->update_surr(vocabulary);
-		contexts.insert(cp);
+		contexts.insert(std::move(cp));
+	}
+}
+
+void Corpus::ser_voc_sparse_vec(std::ostream& out) const
+{
+	if (vocabulary.empty())
+		throw std::exception("No vocabualary to work with!");
+
+	out << (*(vocabulary.begin()))->features.get_len() << std::endl;
+	for (auto& w : vocabulary)
+		out << w->word << " " << w->get_freq() << " " << w->features << std::endl;
+}
+
+void Corpus::deser_voc_sparse_vec(std::istream& in)
+{
+	size_t veclen;
+	in >> veclen;
+	in.get();
+	
+	string line;
+	string word;
+	size_t freq;
+	SparseVector<float> sv(veclen);
+	while (std::getline(in, line, '\n'))
+	{
+		sv.clear();
+		std::istringstream ssline(line, std::ios::in);
+		ssline >> word >> freq >> sv;
+		auto wp = std::make_shared<Word>(Word(word, freq));
+		wp->features = sv;
+		vocabulary.insert(wp);
 	}
 }
 
@@ -188,27 +256,34 @@ WordPtr Corpus::read_word(std::istream& stream)
 	return WordPtr(nullptr);
 }
 
-vector<CtxPtr> Corpus::arrange_ctx(WordPtr curr_word)
+void Corpus::arrange_ctx(WordPtr curr_word)
 {
-	ctx_hist.push_back(curr_word);
-	if (ctx_hist.size() == 2 * Context::window_size + 1) // enough words to form a context
+	int pos = ctx_hist.size();
+	for (auto histit = ctx_hist.begin(); histit != ctx_hist.end(); ++histit)
 	{
-		vector<CtxPtr> ctxs;
-		ctxs.reserve(Context::window_size * 2);
-		signed char pos = - Context::window_size;
-		for (auto w : ctx_hist)
+		if (histit->get() != nullptr)
 		{
-			if (pos != 0)
-			{
-				auto ctxptr = std::make_shared<Context>(Context(w, pos));
-				ctxs.push_back(ctxptr);
-			}
-			++pos;
+			// create ctx from history words to assign it to curr_word
+			auto ctx_hist_ptr = contexts.insert(unique_ptr<Context>(
+				new Context(*histit, -pos))); // pos: -n, -(n-1), ..., -2, -1
+			if (!ctx_hist_ptr.second)
+				(*ctx_hist_ptr.first)->inc_freq();
+			(*ctx_hist_ptr.first)->surround_word(curr_word);
+
+			// create ctx from curr_word to assign it to prev window_size words
+			auto ctx_curr_ptr = contexts.insert(unique_ptr<Context>(
+				new Context(curr_word, pos))); // pos: n, n-1, ..., 2, 1
+			if (!ctx_curr_ptr.second)
+				(*ctx_curr_ptr.first)->inc_freq();
+			(*ctx_curr_ptr.first)->surround_word(*histit);
 		}
-		ctx_hist.pop_front();
-		return ctxs;
+		--pos;
 	}
-	return vector<CtxPtr>();
+	
+	// append curr_word & rm words outside of window_size
+	ctx_hist.push_back(curr_word);
+	if (ctx_hist.size() > Context::window_size)
+		ctx_hist.pop_front();
 }
 
 bool Corpus::try_form_well(string orig, string& res, bool lowcost)
@@ -251,6 +326,13 @@ void Corpus::print_read_info(float rate)
 		std::cout << rate * 100.0 << "% - ";
 		std::cout << "voc size: " << vocabulary.size() << "; ctx size: " << contexts.size() << std::endl;
 	}
+}
+
+void Corpus::insert_null_to_ctx_hist()
+{
+	ctx_hist.push_back(WordPtr(nullptr));
+	if (ctx_hist.size() > Context::window_size)
+		ctx_hist.pop_front();
 }
 
 void Corpus::init()

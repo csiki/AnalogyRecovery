@@ -3,7 +3,7 @@
 #include "Word.h"
 
 const unsigned char Context::window_size = 2; // 2 left, 2 right from the word
-const double Context::distance_multiplier = 0.9; // word in n distance get a alpha^0.9 multiplier
+const double Context::distance_multiplier = 1; // word in n distance get a alpha^0.9 multiplier
 
 size_t std::hash<CtxPtr>::operator()(const CtxPtr& cp) const
 {
@@ -21,7 +21,7 @@ bool std::less<CtxPtr>::operator()(const CtxPtr& cp1, const CtxPtr& cp2) const
 	return cp1->ctx < cp2->ctx || (cp1->ctx == cp2->ctx && cp1->pos < cp2->pos);
 }
 
-Context::Context(WordPtr ctx_, signed char pos_, size_t freq_, SurrMap surrounded_) : ctx(ctx_), pos(pos_), freq(freq_), surrounded(surrounded_) {}
+Context::Context(WordPtr ctx_, int pos_, size_t freq_, SurrMap surrounded_) : ctx(ctx_), pos(pos_), freq(freq_), surrounded(surrounded_) {}
 
 void Context::surround_word(WordPtr word, size_t freq_from)
 {
@@ -57,7 +57,7 @@ void Context::update_surr(const unordered_set<WordPtr, std::hash<WordPtr>, std::
 	{
 		auto real_wp = vocabulary.find(s.first);
 		if (real_wp == vocabulary.end())
-			throw std::exception("Word in context cannot be found in the vocabulary");
+			throw std::exception("Word in context cannot be found in the vocabulary!");
 		tmp_surr.insert(std::make_pair(*real_wp, s.second));
 	}
 	surrounded = tmp_surr;
@@ -65,8 +65,8 @@ void Context::update_surr(const unordered_set<WordPtr, std::hash<WordPtr>, std::
 
 std::ostream& operator<<(std::ostream& out, const CtxPtr& cp)
 {
-	out << cp->ctx->word << " " << cp->get_freq() << " " << cp->pos << " ";
-	for (auto s = cp->surr_begin(); s != cp->surr_end(); ++s)
+	out << cp->ctx->word << " " << cp->get_freq() << " " << (int)cp->pos << " ";
+	for (auto& s = cp->surr_begin(); s != cp->surr_end(); ++s)
 	{
 		out << s->first->word << " " << s->second << " ";
 	}
@@ -83,7 +83,7 @@ std::istream& operator>>(std::istream& in, CtxPtr& wp)
 	string ctx_s;
 	WordPtr ctx;
 	size_t freq;
-	signed char pos;
+	int pos;
 	SurrMap surrounded;
 
 	ssline >> ctx_s >> freq >> pos;
@@ -92,9 +92,10 @@ std::istream& operator>>(std::istream& in, CtxPtr& wp)
 	while (!ssline.eof())
 	{
 		ssline >> word >> wfreq;
+		word.shrink_to_fit();
 		surrounded.insert(std::make_pair(std::make_shared<Word>(Word(word, 0)), wfreq));
 	}
 
-	wp = std::make_shared<Context>(Context(std::make_shared<Word>(ctx_s), pos, freq, surrounded));
+	wp = unique_ptr<Context>(new Context(std::make_shared<Word>(ctx_s), pos, freq, surrounded));
 	return in;
 }

@@ -56,6 +56,7 @@ std::istream& operator>>(std::istream& in, WordPtr& wp)
 	string word;
 	size_t freq;
 	in >> word >> freq;
+	word.shrink_to_fit();
 	wp = std::make_shared<Word>(Word(word, freq));
 	return in;
 }

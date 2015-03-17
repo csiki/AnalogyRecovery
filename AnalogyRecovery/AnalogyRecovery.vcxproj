@@ -139,14 +139,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\analogy.h" />
     <ClInclude Include="..\src\Context.h" />
     <ClInclude Include="..\src\Corpus.h" />
     <ClInclude Include="..\src\SparseVector.h" />
     <ClInclude Include="..\src\Word.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\analogy.cpp" />
     <ClCompile Include="..\src\Context.cpp" />
     <ClCompile Include="..\src\Corpus.cpp" />
     <ClCompile Include="..\src\main.cpp" />
