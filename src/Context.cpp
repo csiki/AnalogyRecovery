@@ -3,7 +3,7 @@
 #include "Word.h"
 
 const unsigned char Context::window_size = 2; // 2 left, 2 right from the word
-const double Context::distance_multiplier = 1; // word in n distance get a alpha^0.9 multiplier
+const double Context::distance_multiplier = 1.0; // word in n distance get a alpha^0.9 multiplier
 
 size_t std::hash<CtxPtr>::operator()(const CtxPtr& cp) const
 {
@@ -87,6 +87,7 @@ std::istream& operator>>(std::istream& in, CtxPtr& wp)
 	SurrMap surrounded;
 
 	ssline >> ctx_s >> freq >> pos;
+
 	string word;
 	size_t wfreq;
 	while (!ssline.eof())

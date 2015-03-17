@@ -142,6 +142,7 @@
     <ClInclude Include="..\src\Context.h" />
     <ClInclude Include="..\src\Corpus.h" />
     <ClInclude Include="..\src\SparseVector.h" />
+    <ClInclude Include="..\src\test.h" />
     <ClInclude Include="..\src\Word.h" />
   </ItemGroup>
   <ItemGroup>
@@ -149,6 +150,7 @@
     <ClCompile Include="..\src\Corpus.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\SparseVector.cpp" />
+    <ClCompile Include="..\src\test.cpp" />
     <ClCompile Include="..\src\Word.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
