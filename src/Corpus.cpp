@@ -5,8 +5,8 @@ unordered_set<char> Corpus::forbidden_chars; // numbers, non-alphabetical charac
 unordered_set<string> Corpus::forbidden_words;
 unordered_set<char> Corpus::endofsentence_chars;
 bool Corpus::split_ctx_at_sentence = true;
-size_t Corpus::min_num_of_occurrence = 100; // TODO
-double Corpus::detail_multiplier = 1.0; // TODO check for other values
+size_t Corpus::min_num_of_occurrence = 50; // TODO
+double Corpus::detail_multiplier = 5.0; // TODO check for other values
 const double Corpus::analogy_eps = 1e-4;
 
 WordPtr Corpus::analogy_3_cos_add(WordPtr a, WordPtr a_, WordPtr b)
